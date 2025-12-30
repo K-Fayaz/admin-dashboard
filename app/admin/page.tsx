@@ -1,38 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FaExpandAlt } from "react-icons/fa";
 import MediaThumbnail from "./components/MediaThumbnail";
 import PromptModal from "./components/PromptModal";
 import type { Prompt } from "./components/types";
+import { usePrompts } from "../../hooks/usePrompts";
 
 export default function AdminPage() {
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { prompts, loading, error } = usePrompts();
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  useEffect(() => {
-    async function fetchPrompts() {
-      try {
-        const response = await fetch("/api/prompts");
-        const data = await response.json();
-        
-        if (data.success) {
-          setPrompts(data.data);
-        } else {
-          setError(data.error || "Failed to fetch prompts");
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPrompts();
-  }, []);
 
   const truncatePrompt = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;

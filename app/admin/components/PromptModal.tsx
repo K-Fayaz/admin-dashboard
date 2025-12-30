@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { FaTimes } from "react-icons/fa";
 import MediaThumbnail from "./MediaThumbnail";
-import type { Prompt, User, Brand } from "./types";
+import type { Prompt } from "./types";
+import { useUserAndBrand } from "../../../hooks/useUserAndBrand";
 
 interface PromptModalProps {
   prompt: Prompt | null;
@@ -12,34 +12,13 @@ interface PromptModalProps {
   onEvaluate?: (promptId: string) => void;
 }
 
-export default function PromptModal({ 
-  prompt, 
-  isOpen, 
-  onClose,
-  onEvaluate
-}: PromptModalProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [brand, setBrand] = useState<Brand | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && prompt) {
-      setLoading(true);
-      Promise.all([
-        fetch(`/api/users/${prompt.userId}`).then(res => res.json()),
-        fetch(`/api/brands/${prompt.brandId}`).then(res => res.json())
-      ])
-        .then(([userData, brandData]) => {
-          if (userData.success) setUser(userData.data);
-          if (brandData.success) setBrand(brandData.data);
-        })
-        .catch(err => console.error('Error fetching user/brand:', err))
-        .finally(() => setLoading(false));
-    } else {
-      setUser(null);
-      setBrand(null);
-    }
-  }, [isOpen, prompt]);
+export default function PromptModal({ prompt, isOpen, onClose, onEvaluate }: PromptModalProps) {
+  
+  const { user, brand, loading } = useUserAndBrand(
+    prompt?.userId,
+    prompt?.brandId,
+    isOpen
+  );
 
   if (!isOpen || !prompt) return null;
 
