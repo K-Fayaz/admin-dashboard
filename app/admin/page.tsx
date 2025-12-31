@@ -14,6 +14,7 @@ export default function AdminPage() {
   const { prompts, loading, error } = usePrompts(filter ?? undefined);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [evaluatingPromptId, setEvaluatingPromptId] = useState<string | null>(null);
 
   const truncatePrompt = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;
@@ -21,6 +22,7 @@ export default function AdminPage() {
   };
 
   const handleEvaluate = async (promptId: string) => {
+    setEvaluatingPromptId(promptId);
     try {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -52,13 +54,16 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error('Error calling evaluate API:', error);
+    } finally {
+      setEvaluatingPromptId(null);
     }
-  };
+  }; 
 
   const handleCardEvaluate = (e: React.MouseEvent, promptId: string) => {
     e.stopPropagation(); // Prevent opening modal
+    if (evaluatingPromptId !== null) return;
     handleEvaluate(promptId);
-  };
+  }; 
 
   if (loading) {
     return (
@@ -137,11 +142,21 @@ export default function AdminPage() {
                   
                   {/* Evaluate Button */}
                   <button
-                    className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600"
+                    className={`w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600 ${evaluatingPromptId !== null && evaluatingPromptId !== prompt._id ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={(e) => handleCardEvaluate(e, prompt._id)}
+                    disabled={evaluatingPromptId !== null && evaluatingPromptId !== prompt._id}
+                    aria-busy={evaluatingPromptId === prompt._id}
                   >
-                    Evaluate
-                  </button>
+                    {evaluatingPromptId === prompt._id ? (
+                      <span className="inline-flex items-center justify-center gap-2">
+                        <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                        </svg>
+                        Evaluating...
+                      </span>
+                    ) : 'Evaluate'}
+                  </button> 
                 </div>
               </div>
             ))}
@@ -158,6 +173,7 @@ export default function AdminPage() {
           setSelectedPrompt(null);
         }}
         onEvaluate={handleEvaluate}
+        evaluatingPromptId={evaluatingPromptId}
       />
     </div>
   );

@@ -37,6 +37,8 @@ export async function GET(request: Request) {
     const filterMap: Record<string, { name: string; sort?: Record<string, number>; query?: Record<string, any> }> = {
       newest_first: { name: 'newest', sort: { timestamp: -1 } },
       oldest_first: { name: 'oldest', sort: { timestamp: 1 } },
+      highest_score: { name: 'highest_score' },
+      lowest_score: { name: 'lowest_score' },
       evaluated: { name: 'evaluated', query: { evaluation: { $ne: null } } },
       not_evaluated: { name: 'not_evaluated', query: { evaluation: null } },
     };
@@ -50,14 +52,37 @@ export async function GET(request: Request) {
 
     const filterInfo = filterMap[normalizedFilter];
 
-    // Build query (default to empty object) and apply sorting if defined
+    // Build query (default to empty object)
     const query = filterInfo.query ?? {};
 
-    console.log(query, filterInfo);
+    let prompts;
 
-    const prompts = filterInfo.sort
-      ? await Prompt.find(query).sort(filterInfo.sort).lean()
-      : await Prompt.find(query).lean();
+    // Score-based filters require populating evaluation and sorting by evaluation.score
+    if (normalizedFilter === 'highest_score' || normalizedFilter === 'lowest_score') {
+      const sortOrder = normalizedFilter === 'highest_score' ? -1 : 1;
+
+      // Use aggregation to $lookup evaluation and sort by evaluation.score in the database
+      prompts = await Prompt.aggregate([
+        { $match: { evaluation: { $ne: null } } },
+        {
+          $lookup: {
+            from: 'evaluations',
+            localField: 'evaluation',
+            foreignField: '_id',
+            as: 'evaluation',
+          },
+        },
+        { $unwind: '$evaluation' },
+        { $sort: { 'evaluation.score': sortOrder } },
+      ]);
+    } else {
+      // For other filters populate evaluation to include details when present
+      if (filterInfo.sort) {
+        prompts = await Prompt.find(query).sort(filterInfo.sort).populate('evaluation').lean();
+      } else {
+        prompts = await Prompt.find(query).populate('evaluation').lean();
+      }
+    }
 
     return NextResponse.json(
       {
