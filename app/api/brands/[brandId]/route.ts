@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { Brand } from '@/models/brand';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ brandId: string }> | { brandId: string } }
 ) {
   try {
+    const auth = requireAdmin(request);
+    if (auth instanceof NextResponse) return auth;
+
     await connectDB();
     
     const resolvedParams = params instanceof Promise ? await params : params;

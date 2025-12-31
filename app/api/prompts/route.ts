@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { Prompt } from '@/models/prompts';
+import { requireAdmin } from '@/lib/auth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const auth = requireAdmin(request);
+    if (auth instanceof NextResponse) return auth;
+
     await connectDB();
     
     const prompts = await Prompt.find({}).sort({ timestamp: -1 }).lean();

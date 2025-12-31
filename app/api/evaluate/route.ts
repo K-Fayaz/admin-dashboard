@@ -6,6 +6,7 @@ import { Evaluation } from '@/models/evaluation';
 import sizeComplianceAgent from '@/agents/sizeCompliance';
 import brandComplianceAgent from "@/agents/brandCompliance";
 import aggregatorAgent from '@/agents/aggregator';
+import { requireAdmin } from '@/lib/auth';
 
 interface SizeComplianceResult {
   score: number;
@@ -31,6 +32,9 @@ interface AggregatorResult {
 
 export async function POST(request: Request) {
   try {
+    const auth = requireAdmin(request);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const { id } = body;
 

@@ -6,9 +6,39 @@ import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    router.push("/admin");
+
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get('username')?.toString().trim() || '';
+    const password = formData.get('password')?.toString() || '';
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.error || 'Login failed');
+        return;
+      }
+
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('role', result.role);
+
+      if (result.role === 'admin') {
+        router.push('/admin');
+      } else {
+        alert('you are not admin');
+      }
+    } catch (error) {
+      console.error('Login error', error);
+      alert('Login failed');
+    }
   };
 
   return (

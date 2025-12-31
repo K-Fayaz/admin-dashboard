@@ -48,6 +48,20 @@ async function main() {
       User
     );
 
+    // Ensure a manual admin user exists
+    await User.updateOne(
+      { userId: 'c3a8d2f1-1b5e-4f6c-9a47-8e2d6b1c0f93' },
+      {
+        $set: {
+          userId: 'c3a8d2f1-1b5e-4f6c-9a47-8e2d6b1c0f93',
+          userName: 'admin',
+          userRole: 'admin',
+          password: 'test',
+        },
+      },
+      { upsert: true }
+    );
+
     // Import Brands
     await importCSV(
       path.join(baseDir, 'brands.csv'),

@@ -9,7 +9,24 @@ export function usePrompts() {
   useEffect(() => {
     async function fetchPrompts() {
       try {
-        const response = await fetch("/api/prompts");
+        const token = localStorage.getItem('token');
+        if (!token) {
+          // not logged in, go to login
+          window.location.href = '/';
+          return;
+        }
+
+        const response = await fetch('/api/prompts', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('role');
+          window.location.href = '/';
+          return;
+        }
+
         const data = await response.json();
         
         if (data.success) {

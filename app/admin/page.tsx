@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FaExpandAlt } from "react-icons/fa";
 import MediaThumbnail from "./components/MediaThumbnail";
 import PromptModal from "./components/PromptModal";
@@ -8,6 +9,7 @@ import type { Prompt } from "./components/types";
 import { usePrompts } from "../../hooks/usePrompts";
 
 export default function AdminPage() {
+  const router = useRouter();
   const { prompts, loading, error } = usePrompts();
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -19,13 +21,28 @@ export default function AdminPage() {
 
   const handleEvaluate = async (promptId: string) => {
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
       const response = await fetch('/api/evaluate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ id: promptId }),
       });
+
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        router.push('/');
+        return;
+      }
+
       const data = await response.json();
       if (data.success) {
         console.log('Evaluation successful');
