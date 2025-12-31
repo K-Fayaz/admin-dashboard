@@ -8,13 +8,10 @@ const PromptSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     brandId: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
-    evaluation: {
-      sizeCompliance: Number,
-      subjectAdherence: Number,
-      creativity: Number,
-      moodConsistency: Number,
-      endScore: Number,
-      evaluatedAt: Date,
+    evaluation: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Evaluation', 
+      default: null 
     },
   });
   
