@@ -6,7 +6,6 @@ import { Evaluation } from '@/models/evaluation';
 import sizeComplianceAgent from '@/agents/sizeCompliance';
 import brandComplianceAgent from "@/agents/brandCompliance";
 import aggregatorAgent from '@/agents/aggregator';
-import mongoose from 'mongoose';
 
 interface SizeComplianceResult {
   score: number;
@@ -100,7 +99,7 @@ export async function POST(request: Request) {
     console.log("\n\n",finalResult);
 
     // Create or update evaluation
-    const promptObjectId = new mongoose.Types.ObjectId(id);
+    const promptObjectId = id;
     // @ts-ignore - Agent results are correctly typed at runtime via parseClaudeResponse
     const evaluationData = {
       promptId: promptObjectId,
@@ -155,6 +154,54 @@ export async function POST(request: Request) {
       { 
         success: false, 
         error: error instanceof Error ? error.message : 'Failed to evaluate prompt' 
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Evaluation ID is required'
+        },
+        { status: 400 }
+      );
+    }
+
+    await connectDB();
+
+    const evaluation = await Evaluation.findById(id).lean();
+
+    if (!evaluation) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Evaluation not found'
+        },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: evaluation
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error fetching evaluation:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch evaluation'
       },
       { status: 500 }
     );

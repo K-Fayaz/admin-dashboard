@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from 'react';
 import { FaTimes } from "react-icons/fa";
 import MediaThumbnail from "./MediaThumbnail";
 import type { Prompt } from "./types";
 import { useUserAndBrand } from "../../../hooks/useUserAndBrand";
+import { useEvaluation } from "../../../hooks/useEvaluation";
 
 interface PromptModalProps {
   prompt: Prompt | null;
@@ -19,6 +21,16 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate }: Pro
     prompt?.brandId,
     isOpen
   );
+
+  const { evaluation, loading: evaluationLoading, error: evaluationError } = useEvaluation((prompt as any)?.evaluation, isOpen);
+
+  useEffect(() => {
+    if (evaluation) {
+      console.log('Evaluation loaded for prompt:', evaluation);
+    }
+  }, [evaluation]);
+
+  const [showDetails, setShowDetails] = useState(false);
 
   if (!isOpen || !prompt) return null;
 
@@ -109,6 +121,79 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate }: Pro
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* Evaluation Display */}
+          <div className="mt-6 border-t pt-4">
+            {evaluationLoading ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading evaluation...</p>
+            ) : evaluationError ? (
+              <p className="text-sm text-red-600 dark:text-red-400">Error: {evaluationError}</p>
+            ) : evaluation ? (
+              <div>
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="mb-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Score</h3>
+                    <p className="text-3xl font-bold text-zinc-900 dark:text-zinc-50">{evaluation.score}</p>
+                  </div>
+
+                  <div className="flex-1">
+                    <h3 className="mb-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Summary</h3>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300">{evaluation.summary}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    onClick={() => setShowDetails((s) => !s)}
+                    className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:underline cursor-pointer"
+                  >
+                    {showDetails ? 'Hide details' : 'Show size & brand details'}
+                  </button>
+
+                  {showDetails && (
+                    <div className="mt-4 space-y-4 rounded-sm bg-zinc-50 p-4 text-sm dark:bg-zinc-800">
+                      {/* Size Compliance */}
+                      <div>
+                        <h4 className="mb-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Size Compliance</h4>
+                        <p className="text-sm text-zinc-900 dark:text-zinc-50">Score: <strong>{evaluation.sizeCompliance?.score ?? '—'}</strong></p>
+                        {evaluation.sizeCompliance?.reasoning && (
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{evaluation.sizeCompliance.reasoning}</p>
+                        )}
+                        <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">Optimal: {evaluation.sizeCompliance?.isOptimal ? 'Yes' : 'No'}</p>
+                      </div>
+
+                      {/* Brand Compliance */}
+                      <div>
+                        <h4 className="mb-1 text-sm font-semibold text-zinc-500 dark:text-zinc-400">Brand Compliance</h4>
+                        <p className="text-sm text-zinc-900 dark:text-zinc-50">Score: <strong>{evaluation.brandCompliance?.score ?? '—'}</strong></p>
+
+                        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Style alignment: {evaluation.brandCompliance?.styleAlignment ?? '—'}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Color compliance: {evaluation.brandCompliance?.colorCompliance ?? '—'}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Voice consistency: {evaluation.brandCompliance?.voiceConsistency ?? '—'}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">Vision alignment: {evaluation.brandCompliance?.visionAlignment ?? '—'}</p>
+                        </div>
+
+                        {evaluation.brandCompliance?.reasoning && (
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{evaluation.brandCompliance.reasoning}</p>
+                        )}
+
+                        {evaluation.brandCompliance?.strengths && (
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300"><strong>Strengths:</strong> {evaluation.brandCompliance.strengths}</p>
+                        )}
+
+                        {evaluation.brandCompliance?.improvements && (
+                          <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300"><strong>Improvements:</strong> {evaluation.brandCompliance.improvements}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">No evaluation available for this prompt.</p>
             )}
           </div>
 
