@@ -139,3 +139,5 @@ Why LLM aggregation vs. simple formula:
 | Batch processing       | Wrap orchestrator in queue worker (BullMQ/Redis)                        |
 
 ---
+
+"Future implementation: Extract video frames using ffmpeg for thumbnail analysis"
