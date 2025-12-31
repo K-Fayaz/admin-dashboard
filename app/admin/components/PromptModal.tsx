@@ -43,6 +43,9 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate, evalu
 
   if (!isOpen || !prompt) return null;
 
+  const isEvaluated = !!prompt.evaluation;
+  const isDisabled = isEvaluated || (evaluatingPromptId !== null && evaluatingPromptId !== prompt._id);
+
   const formatDate = (date: Date | string) => {
     const d = typeof date === 'string' ? new Date(date) : date;
     return d.toLocaleDateString('en-US', { 
@@ -211,14 +214,15 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate, evalu
             <button
               onClick={() => {
                 if (!prompt) return;
+                if (!onEvaluate) return;
+                if (isEvaluated) return; // don't allow re-evaluating
                 const isAnyEvaluating = evaluatingPromptId !== null && evaluatingPromptId !== undefined;
                 const isThisEvaluating = evaluatingPromptId === prompt._id;
-                if (!onEvaluate) return;
                 if (isAnyEvaluating && !isThisEvaluating) return;
                 onEvaluate(prompt._id);
               }}
-              className={`w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600 ${evaluatingPromptId !== null && evaluatingPromptId !== prompt._id ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={evaluatingPromptId !== null && evaluatingPromptId !== prompt._id}
+              className={`w-full rounded-md px-4 py-2 text-sm font-medium text-white transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-500' : 'bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600'}`}
+              disabled={isDisabled}
               aria-busy={evaluatingPromptId === prompt?._id}
             >
               {evaluatingPromptId === prompt?._id ? (
@@ -230,7 +234,7 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate, evalu
                   Evaluating...
                 </span>
               ) : (
-                'Evaluate'
+                isEvaluated ? 'Evaluated' : 'Evaluate'
               )}
             </button>
           </div>
