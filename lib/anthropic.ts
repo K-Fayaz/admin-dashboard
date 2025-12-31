@@ -16,7 +16,7 @@ type AnthropicMessage = {
 
 const useAnthropic = async(messages: AnthropicMessage[],max_tokens: number = 1024)=>{
     const msg = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514", // Use the full model version string
+      model: "claude-sonnet-4-20250514",
       max_tokens: max_tokens,
       messages,
     });

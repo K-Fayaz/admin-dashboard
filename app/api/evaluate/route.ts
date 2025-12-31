@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { Prompt } from '@/models/prompts';
+import { Brand } from '@/models/brand';
 import sizeComplianceAgent from '@/agents/sizeCompliance';
+import brandComplianceAgent from "@/agents/brandCompliance";
 
 export async function POST(request: Request) {
   try {
@@ -21,6 +23,16 @@ export async function POST(request: Request) {
     await connectDB();
     
     const prompt = await Prompt.findById(id).lean();
+    const brand = await Brand.findOne({brandId: prompt.brandId}).lean();
+
+    let brandDetails = {
+      brandName: brand.brandName,
+      brandDescription: brand.brandDescription,
+      style: brand.style,
+      brandVision: brand.brandVision,
+      brandVoice: brand.brandVoice,
+      colors: brand.colors,
+    }
     
     if (!prompt) {
       return NextResponse.json(
@@ -34,11 +46,13 @@ export async function POST(request: Request) {
 
     // Log prompt details to console
 
-    const [sizeResult] = await Promise.all([
-      sizeComplianceAgent(prompt.imagePath, prompt.prompt, prompt.channel)
+    const [brandResult] = await Promise.all([
+      // sizeComplianceAgent(prompt.imagePath, prompt.prompt, prompt.channel),
+      brandComplianceAgent(prompt.imagePath, prompt.prompt, brandDetails)
     ]);
 
-    console.log(sizeResult);
+    // console.log(sizeResult);
+    console.log(brandResult);
     
     return NextResponse.json(
       { 
