@@ -17,6 +17,31 @@ export default function AdminPage() {
     return text.substring(0, maxLength) + "...";
   };
 
+  const handleEvaluate = async (promptId: string) => {
+    try {
+      const response = await fetch('/api/evaluate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: promptId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        console.log('Evaluation successful');
+      } else {
+        console.error('Evaluation failed:', data.error);
+      }
+    } catch (error) {
+      console.error('Error calling evaluate API:', error);
+    }
+  };
+
+  const handleCardEvaluate = (e: React.MouseEvent, promptId: string) => {
+    e.stopPropagation(); // Prevent opening modal
+    handleEvaluate(promptId);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -78,10 +103,7 @@ export default function AdminPage() {
                   {/* Evaluate Button */}
                   <button
                     className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600"
-                    onClick={() => {
-                      // TODO: Implement evaluate functionality
-                      console.log("Evaluate clicked for prompt:", prompt._id);
-                    }}
+                    onClick={(e) => handleCardEvaluate(e, prompt._id)}
                   >
                     Evaluate
                   </button>
@@ -100,10 +122,7 @@ export default function AdminPage() {
           setIsModalOpen(false);
           setSelectedPrompt(null);
         }}
-        onEvaluate={(promptId) => {
-          // TODO: Implement evaluate functionality
-          console.log("Evaluate clicked for prompt:", promptId);
-        }}
+        onEvaluate={handleEvaluate}
       />
     </div>
   );
