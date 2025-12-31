@@ -1,5 +1,6 @@
 import useAnthropic from "../lib/anthropic";
 import { buildBrandCompliancePrompt } from "@/lib/prompts/brandCompliance";
+import { parseClaudeResponse } from "@/lib/ai/parseClaudeResponse";
 
 interface Brand {
     brandName: string;
@@ -57,6 +58,8 @@ const brandComplianceAgent = async (imagePath: string, prompt: string, brandDeta
           ]
         }
     ]);
+
+    result = parseClaudeResponse(result);
 
     return result;
 }

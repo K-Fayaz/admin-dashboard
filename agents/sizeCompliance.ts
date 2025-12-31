@@ -1,6 +1,7 @@
 import useAnthropic from "../lib/anthropic";
 import { buildSizeCompliancePrompt } from "@/lib/prompts/sizeCompliance";
 import { getImageMetadata } from '@/lib/imageMetadata';
+import { parseClaudeResponse } from "@/lib/ai/parseClaudeResponse";
 
 
 const sizeComplianceAgent = async (imagePath:string, prompt:string, channel: string) => {
@@ -15,7 +16,7 @@ const sizeComplianceAgent = async (imagePath:string, prompt:string, channel: str
     console.log("\n", channel);
 
 
-    const result = await useAnthropic([
+    let result = await useAnthropic([
         {
           role: "user",
           content: [
@@ -24,7 +25,7 @@ const sizeComplianceAgent = async (imagePath:string, prompt:string, channel: str
         }
     ]);
 
-
+    result = parseClaudeResponse(result);
     return result;
 }
 

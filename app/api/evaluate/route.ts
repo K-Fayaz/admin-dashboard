@@ -4,6 +4,7 @@ import { Prompt } from '@/models/prompts';
 import { Brand } from '@/models/brand';
 import sizeComplianceAgent from '@/agents/sizeCompliance';
 import brandComplianceAgent from "@/agents/brandCompliance";
+import aggregatorAgent from '@/agents/aggregator';
 
 export async function POST(request: Request) {
   try {
@@ -46,13 +47,16 @@ export async function POST(request: Request) {
 
     // Log prompt details to console
 
-    const [brandResult] = await Promise.all([
-      // sizeComplianceAgent(prompt.imagePath, prompt.prompt, prompt.channel),
-      brandComplianceAgent(prompt.imagePath, prompt.prompt, brandDetails)
+    const [sizeResult, brandResult] = await Promise.all([
+      sizeComplianceAgent(prompt.imagePath, prompt.prompt, prompt.channel),
+      brandComplianceAgent(prompt.imagePath, prompt.prompt, brandDetails),
     ]);
 
-    // console.log(sizeResult);
-    console.log(brandResult);
+    const finalResult = await aggregatorAgent(sizeResult, brandResult);
+
+    console.log(sizeResult);
+    console.log("\n\n",brandResult);
+    console.log("\n\n",finalResult);
     
     return NextResponse.json(
       { 
