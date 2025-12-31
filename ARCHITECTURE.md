@@ -1,364 +1,142 @@
-# Architecture Documentation
+# ARCHITECTURE
 
-## Overview
+## 1. Key Extensions
 
-An admin dashboard for evaluating user-generated images against brand guidelines and platform requirements using a multi-agent AI system.
+| Area            | Key files / modules          | Purpose                                                                                              |
+| --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **AI Agents**   | `agents/*.ts`                | Three agents: size compliance (Agent A), brand compliance (Agent B), and aggregator (Agent C).       |
+| **API Routes**  | `app/api/**`                 | REST endpoints for auth, prompts listing, evaluation orchestration, and fetching evaluation results. |
+| **Admin UI**    | `app/admin/**`               | Dashboard with prompt cards, modal for details, evaluation trigger, and live results display.        |
+| **LLM Wrapper** | `lib/anthropic.ts`           | Anthropic Claude API integration with request/response handling.                                     |
+| **Parsers**     | `lib/parseClaudeResponse.ts` | Extracts and parses JSON from LLM responses, handles markdown cleanup.                               |
+| **Image Utils** | `lib/imageMetadata.ts`       | Extracts image dimensions and metadata for size compliance checks.                                   |
 
-**Tech Stack:** Next.js, MongoDB, Anthropic Claude, TypeScript
+## 2. Data Model (MongoDB + Mongoose)
 
----
+Using MongoDB via Mongoose. Schema is straightforward with clear references between collections.
 
-## System Architecture
+### Core Collections
 
-```mermaid
-graph TB
-    A[Admin UI] -->|HTTP + JWT| B[Next.js API Routes]
-    B -->|Orchestrates| C[Agent A: Size Compliance]
-    B -->|Orchestrates| D[Agent B: Brand Compliance]
-    C -->|Results| E[Agent C: Aggregator]
-    D -->|Results| E
-    D -->|API Call| F[Anthropic Claude]
-    B -->|Persist| G[(MongoDB)]
-    E -->|Final Score| B
-    B -->|Response| A
+| Collection     | What it stores                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **User**       | Admin credentials (`username`, `password`), role field for access control.                                         |
+| **Brand**      | Brand profile with style, voice, vision, colors. Used by Agent B for brand compliance evaluation.                  |
+| **Prompt**     | User-generated content: prompt text, media URL, media type, references to user, brand, and evaluation.             |
+| **Evaluation** | Per-prompt evaluation results. Contains objects for size compliance, brand compliance, final score, and timestamp. |
 
-    style A fill:#e1f5ff
-    style F fill:#fff4e1
-    style G fill:#e8f5e9
-    style E fill:#f3e5f5
-```
+### Why these choices
 
----
+1. **Mongoose** – Simple ORM with good TypeScript support, familiar for rapid prototyping.
+2. **ObjectId references** – Keeps documents lean, enables efficient queries.
+3. **Embedded agent outputs** – Each evaluation stores full JSON from Agent A and Agent B for auditability and debugging.
 
-## Multi-Agent System
+## 3. Seeding
 
-### Agent Responsibilities
+`scripts/importData.ts` loads CSVs (`users.csv`, `brands.csv`, `prompts.csv`) into MongoDB:
 
-| Agent                         | Type          | Input                                 | Output                                                                                           | Rationale                                                            |
-| ----------------------------- | ------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| **Agent A: Size Compliance**  | Deterministic | Image metadata, platform requirements | `score`, `reasoning`, `isOptimal`                                                                | Rule-based checks are fast, testable, and cost-effective             |
-| **Agent B: Brand Compliance** | LLM (Claude)  | Image (base64), prompt, brand details | `score`, `styleAlignment`, `colorCompliance`, `voiceConsistency`, `visionAlignment`, `reasoning` | Brand alignment requires semantic understanding and visual reasoning |
-| **Agent C: Aggregator**       | Deterministic | Agent A + B outputs                   | `endScore`, `summary`                                                                            | Ensures reproducible scoring with configurable weights               |
+1. Parse CSVs with Papaparse
+2. Create/update documents using Mongoose
+3. Sets up admin user (username: `admin`, password: `test`)
 
-### Orchestration Flow
+Run with: `npm run import-data`
 
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant API
-    participant AgentA
-    participant AgentB
-    participant AgentC
-    participant MongoDB
-    participant Claude
+## 4. Multi-Agent Pipeline
 
-    Admin->>API: POST /api/evaluate
-    API->>API: Validate JWT
-    API->>MongoDB: Fetch Prompt + Brand
+### Agent Roles
 
-    par Parallel Execution
-        API->>AgentA: Evaluate Size
-        API->>AgentB: Evaluate Brand
-        AgentB->>Claude: Analyze Image
-        Claude-->>AgentB: Analysis Result
-    end
+| Agent              | Type         | What it checks                                                       | Output                                                                               | Why this approach                                    |
+| ------------------ | ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| **Agent A: Size**  | LLM (Claude) | Image dimensions vs platform requirements (Instagram, etc.)          | `{ score: 0-10, reasoning: string, isOptimal: boolean }`                             | LLM provides contextual reasoning for size decisions |
+| **Agent B: Brand** | LLM (Claude) | Visual content alignment with brand style, colors, voice, and vision | `{ score: 0-10, styleAlignment, colorCompliance, voiceConsistency, reasoning, ... }` | Requires semantic understanding and visual reasoning |
+| **Agent C: Agg**   | LLM (Claude) | Combines Agent A + B scores with contextual analysis                 | `{ endScore: 0-10, summary: string }`                                                | LLM provides nuanced summary based on all inputs     |
 
-    AgentA-->>API: Size Result
-    AgentB-->>API: Brand Result
-
-    API->>AgentC: Aggregate Scores
-    AgentC-->>API: Final Score + Summary
-
-    API->>MongoDB: Save Evaluation
-    API-->>Admin: Return Results
-```
-
-**Execution Strategy:** Agents run in parallel using `Promise.all()` to minimize latency.
-
----
-
-## Data Model
-
-### Collections
-
-```mermaid
-erDiagram
-    PROMPT ||--o{ EVALUATION : has
-    PROMPT }o--|| USER : created_by
-    PROMPT }o--|| BRAND : belongs_to
-
-    PROMPT {
-        ObjectId _id
-        ObjectId userId
-        ObjectId brandId
-        string prompt
-        string mediaUrl
-        string mediaType
-        ObjectId evaluationId
-        date createdAt
-    }
-
-    EVALUATION {
-        ObjectId _id
-        ObjectId promptId
-        number endScore
-        string summary
-        object sizeCompliance
-        object brandCompliance
-        date createdAt
-    }
-
-    BRAND {
-        ObjectId _id
-        string brandName
-        string style
-        string colors
-        string voice
-        string vision
-    }
-
-    USER {
-        ObjectId _id
-        string username
-        string password
-        string role
-    }
-```
-
-### Evaluation Schema
-
-| Field             | Type          | Description                                                                                                         |
-| ----------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `promptId`        | ObjectId      | Reference to evaluated prompt                                                                                       |
-| `endScore`        | Number (0-10) | Final weighted score                                                                                                |
-| `summary`         | String        | Brief assessment                                                                                                    |
-| `sizeCompliance`  | Object        | `{ score, reasoning, isOptimal }`                                                                                   |
-| `brandCompliance` | Object        | `{ score, styleAlignment, colorCompliance, voiceConsistency, visionAlignment, reasoning, strengths, improvements }` |
-| `createdAt`       | Date          | Evaluation timestamp                                                                                                |
-
-**Why store per-agent outputs?**
-
-- Auditability for brand teams
-- Debugging LLM variations
-- Historical analysis and reporting
-
----
-
-## Key Files
+### Evaluation Flow
 
 ```
-app/
-├── admin/
-│   ├── page.tsx                    # Main admin dashboard
-│   └── components/
-│       ├── PromptModal.tsx         # Evaluation results display
-│       └── MediaThumbnail.tsx      # Image/video preview
-├── api/
-│   ├── evaluate/route.ts           # Orchestration endpoint
-│   ├── prompts/route.ts            # List & filter prompts
-│   └── login/route.ts              # JWT authentication
-agents/
-├── sizeCompliance.ts               # Agent A
-├── brandCompliance.ts              # Agent B
-└── aggregator.ts                   # Agent C
-lib/
-├── anthropic.ts                    # Claude API wrapper
-├── auth.ts                         # JWT utilities
-└── parseClaudeResponse.ts          # JSON extraction
-models/
-├── Prompt.ts
-├── Evaluation.ts
-├── Brand.ts
-└── User.ts
+┌──────────────┐
+│Admin clicks  │
+│"Evaluate"    │
+└──────┬───────┘
+       ▼
+┌──────────────────┐
+│API validates JWT │
+│Fetch Prompt+Brand│
+└──────┬───────────┘
+       ▼ (parallel execution)
+  ┌────────┐  ┌───────────┐
+  │Agent A │  │ Agent B   │
+  │(size)  │  │(brand+LLM)│
+  └───┬────┘  └─────┬─────┘
+      └─────┬───────┘
+            ▼
+      ┌──────────┐
+      │ Agent C  │ (aggregator)
+      │ endScore │
+      └────┬─────┘
+           ▼
+    ┌─────────────┐
+    │Save to Mongo│
+    │Return to UI │
+    └─────────────┘
 ```
 
----
+**Orchestration:** Agents A and B run in parallel using `Promise.all()` to minimize latency. Agent C runs synchronously after receiving both results.
 
-## Trade-offs & Decisions
+## 5. UI & Real-time Updates
 
-### 1. LLM vs. Heuristics
+- **Dashboard** displays all prompts with filtering/sorting
+- **Modal** shows prompt details and triggers evaluation
+- **Loading state** appears during agent execution
+- **Results** update immediately after evaluation completes (no polling needed - response contains full evaluation)
+- **Background refetch** updates the prompt list to show evaluation badge
 
-| Criterion         | Approach         | Reason                                               |
-| ----------------- | ---------------- | ---------------------------------------------------- |
-| Size compliance   | **Heuristics**   | Rule-based, fast, deterministic, cost-effective      |
-| Brand compliance  | **LLM (Claude)** | Requires semantic understanding and visual reasoning |
-| Score aggregation | **Heuristics**   | Reproducible, configurable weights                   |
+## 6. Prompt Engineering
 
-### 2. Orchestration
+Each agent uses a carefully crafted prompt to ensure consistent, structured output:
 
-**Decision:** Manual orchestration with `Promise.all()`
+| Agent   | Prompt Focus                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------ |
+| Agent A | Evaluates image dimensions against platform specs, provides reasoning for optimization           |
+| Agent B | Analyzes visual content against brand guidelines (style, colors, voice, vision) with image input |
+| Agent C | Synthesizes Agent A + B results, weighs brand alignment (80%) vs size (20%), provides summary    |
 
-**Pros:**
+All agents are instructed to return **valid JSON only** with specific schema, making parsing reliable.
 
-- Simple, explicit, no external dependencies
-- Easy to understand and debug
-- Appropriate for project scope
+## 7. Aggregation Formula
 
-**Cons:**
-
-- No built-in retry/observability
-- Manual error handling
-
-**Alternative Considered:** Workflow engines (LangGraph, Temporal) — rejected as over-engineering for this scope.
-
-### 3. Image Compression
-
-**Challenge:** Claude has a 5MB limit for base64 images
-
-**Solution:** Use Sharp library to compress images >4.5MB
-
-- Resize to max 2048x2048
-- Convert to JPEG with 85% quality
-- Preserves enough detail for AI analysis
-
-### 4. Video Evaluation
-
-**Decision:** Deferred to future iteration
-
-**Reasoning:**
-
-- Time constraint (4-hour assignment limit)
-- Requires ffmpeg setup and frame extraction
-- Images represent majority use case
-- Architecture supports future extension
-
-**Future Implementation:**
-
-```
-Video → Extract 6-8 frames → Process as images → Aggregate results
-```
-
-### 5. Caching
-
-**Decision:** No caching implemented
-
-**Reasoning:**
-
-- Evaluations are stored in MongoDB (acts as result cache)
-- Re-evaluations are intentionally allowed for updated brand guidelines
-- LLM responses may vary; storing raw outputs is more valuable
-
----
-
-## Scoring Formula
+Agent C uses LLM to intelligently aggregate scores:
 
 ```typescript
-endScore =
-  sizeCompliance.score * 0.2 + // 20% weight
-  brandCompliance.score * 0.8; // 80% weight (more critical)
+endScore = (
+  agentA.score * 0.2 + // Size compliance: 20%
+  agentB.score * 0.8
+) // Brand alignment: 80%
+  .toFixed(1);
 
-// Rounded to 1 decimal place
+// LLM also generates contextual summary based on both agent outputs
 ```
 
-**Rationale:** Brand alignment is more critical than sizing (which can be easily fixed in post-production).
+**Rationale:** Brand alignment is more critical than sizing. LLM aggregation allows for nuanced interpretation beyond simple weighted average.
+
+## 8. Design Trade-offs
+
+| Choice                             | Why                                                       | Downside                                              |
+| ---------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| All agents use LLM                 | Consistent quality, contextual reasoning, structured JSON | Higher API costs, ~3-5s total latency for 3 LLM calls |
+| Manual orchestration (Promise.all) | Simple, explicit, no framework dependencies               | No built-in retry or observability                    |
+| Storing full agent outputs         | Auditability, debugging LLM variations, historical trends | Larger documents, needs parsing for queries           |
+| Video evaluation deferred          | Time constraint (4-hour limit), complex frame extraction  | Videos currently unsupported                          |
+| No caching                         | Evaluations stored in DB, intentional re-evaluation OK    | Repeated evaluations cost tokens                      |
+| Parallel agent execution           | Faster evaluation (A & B run simultaneously)              | Higher instantaneous API load                         |
+
+## 9. Extension Points
+
+| To add...              | Change...                                                               |
+| ---------------------- | ----------------------------------------------------------------------- |
+| New evaluation metric  | Add agent in `agents/`, update orchestrator in `/api/evaluate/route.ts` |
+| Video frame extraction | Add preprocessing in Agent B using `fluent-ffmpeg`                      |
+| Different LLM          | Swap `lib/anthropic.ts` with OpenAI/Gemini wrapper                      |
+| Custom weights         | Modify formula in `agents/aggregator.ts`                                |
+| Batch processing       | Wrap orchestrator in queue worker (BullMQ/Redis)                        |
 
 ---
-
-## Local Setup
-
-### Prerequisites
-
-- Node.js 18+
-- MongoDB instance
-- Anthropic API key
-
-### Quick Start
-
-```bash
-# 1. Install dependencies
-npm install
-
-# 2. Configure environment
-cp .env.example .env.local
-# Edit .env.local with your credentials
-
-# 3. Seed database
-npm run import-data
-
-# 4. Start development server
-npm run dev
-
-# 5. Login at http://localhost:3000
-# Username: admin
-# Password: test
-```
-
-### Environment Variables
-
-| Variable            | Required | Description                           |
-| ------------------- | -------- | ------------------------------------- |
-| `MONGODB_URI`       | Yes      | MongoDB connection string             |
-| `ANTHROPIC_API_KEY` | Yes      | Claude API key                        |
-| `JWT_SECRET`        | Yes      | Secret for JWT signing                |
-| `NEXTAUTH_URL`      | No       | Base URL (defaults to localhost:3000) |
-
----
-
-## Known Limitations
-
-⚠️ **Development-Only Features:**
-
-- Plaintext passwords in seed data
-- Simplified JWT implementation
-- No rate limiting or request throttling
-
-⚠️ **Functional Limitations:**
-
-- Video evaluation not implemented (frame extraction pending)
-- No retry logic for failed API calls
-- No caching layer for LLM responses
-
-⚠️ **Scale Considerations:**
-
-- Sequential processing (no job queue)
-- All evaluations run synchronously
-- No distributed agent execution
-
----
-
-## Future Enhancements
-
-1. **Video Support:** Extract frames using fluent-ffmpeg
-2. **Batch Evaluation:** Queue-based processing for multiple prompts
-3. **Caching:** Redis layer for LLM responses
-4. **Observability:** Logging, tracing, and monitoring
-5. **Advanced Scoring:** ML-based weight optimization
-6. **User Management:** Proper authentication with password hashing
-
----
-
-## Testing the System
-
-### Manual Testing Flow
-
-1. Navigate to `/admin` and login
-2. Click any prompt card to view details
-3. Click "Evaluate" button
-4. Observe loading state
-5. Review per-criterion scores and reasoning
-6. Check MongoDB for persisted evaluation
-
-### Expected Results
-
-- Size compliance: 0-10 score based on dimensions
-- Brand compliance: Multi-dimensional scoring (style, color, voice, vision)
-- End score: Weighted average displayed prominently
-- Summary: Brief textual assessment
-
----
-
-## Extension Points
-
-The architecture is designed for easy extension:
-
-| Extension                | Implementation Path                               |
-| ------------------------ | ------------------------------------------------- |
-| New evaluation criterion | Add new agent in `agents/`, update orchestrator   |
-| Different LLM            | Swap `lib/anthropic.ts` with alternative provider |
-| Custom scoring weights   | Modify `agents/aggregator.ts` formula             |
-| Video frame extraction   | Add preprocessing step in Agent B                 |
-| Batch processing         | Wrap orchestrator in queue consumer               |
-
----
-
-_This architecture prioritizes clarity, auditability, and extensibility while maintaining simplicity appropriate for rapid prototyping._
