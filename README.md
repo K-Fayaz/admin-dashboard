@@ -40,14 +40,14 @@ This will clear the related collections and insert CSV data. The script also ens
 npm install
 ```
 
-2. Create `.env.local` with at least:
+2. Create `.env.local` (recommended: copy the example and edit):
 
-```env
-MONGODB_URI=your_mongodb_connection_string
-# Optional if you won't use AI features:
-ANTHROPIC_API_KEY=your_anthropic_key
-JWT_SECRET=your_jwt_secret
+```bash
+cp .env.example .env.local
+# then edit .env.local
 ```
+
+The `.env.example` contains the minimal variables required (e.g. `MONGODB_URI`, `JWT_SECRET`, `ANTHROPIC_API_KEY`).
 
 3. Seed the database (required)
 
@@ -68,11 +68,5 @@ npm run dev
 
 ---
 
-## Notes & security
+Simple note: the import script seeds a dev admin with username `admin` and password `test`. Replace or remove this in production and add password hashing as needed.
 
-- The import script seeds a dev admin with password `test` — replace or remove this in production and use proper password hashing.
-- Keep `JWT_SECRET` and `ANTHROPIC_API_KEY` secret and monitor usage.
-
----
-
-If you'd like, I can also add a minimal `.env.example` and a short section on how to replace the dev admin user with a hashed password. Let me know which you'd prefer.
