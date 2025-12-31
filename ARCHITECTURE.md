@@ -98,7 +98,7 @@ Each agent uses a carefully crafted prompt to ensure consistent, structured outp
 | ------- | ------------------------------------------------------------------------------------------------ |
 | Agent A | Evaluates image dimensions against platform specs, provides reasoning for optimization           |
 | Agent B | Analyzes visual content against brand guidelines (style, colors, voice, vision) with image input |
-| Agent C | Synthesizes Agent A + B results, weighs brand alignment (80%) vs size (20%), provides summary    |
+| Agent C | Synthesizes Agent A + B results                                                                  |
 
 All agents are instructed to return **valid JSON only** with specific schema, making parsing reliable.
 
@@ -106,17 +106,16 @@ All agents are instructed to return **valid JSON only** with specific schema, ma
 
 Agent C uses LLM to intelligently aggregate scores:
 
-```typescript
-endScore = (
-  agentA.score * 0.2 + // Size compliance: 20%
-  agentB.score * 0.8
-) // Brand alignment: 80%
-  .toFixed(1);
+- **Weight distribution**: Size compliance 20%, Brand alignment 80%
+- **Strict rules**: If brand score <3, cap final score at 4
+- **Context-aware**: LLM considers reasoning from both agents, not just numbers
+- **Output**: endScore (0-10, 1 decimal) + contextual summary
 
-// LLM also generates contextual summary based on both agent outputs
-```
+Why LLM aggregation vs. simple formula:
 
-**Rationale:** Brand alignment is more critical than sizing. LLM aggregation allows for nuanced interpretation beyond simple weighted average.
+- Handles edge cases intelligently (e.g., excellent brand but poor size vs. vice versa)
+- Generates human-readable summaries explaining the score
+- Can apply qualitative reasoning beyond weighted average
 
 ## 8. Design Trade-offs
 
