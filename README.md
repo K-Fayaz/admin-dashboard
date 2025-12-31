@@ -69,4 +69,3 @@ npm run dev
 ---
 
 Simple note: the import script seeds a dev admin with username `admin` and password `test`. Replace or remove this in production and add password hashing as needed.
-
