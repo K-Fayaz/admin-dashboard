@@ -10,7 +10,8 @@ import { usePrompts } from "../../hooks/usePrompts";
 
 export default function AdminPage() {
   const router = useRouter();
-  const { prompts, loading, error } = usePrompts();
+  const [filter, setFilter] = useState<string | null>(null);
+  const { prompts, loading, error } = usePrompts(filter ?? undefined);
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -85,6 +86,23 @@ export default function AdminPage() {
         <h1 className="mb-8 text-center text-3xl font-semibold text-black dark:text-zinc-50">
           Admin Dashboard
         </h1>
+
+        <div className="mb-6 flex items-center justify-center">
+          <label className="mr-3 text-sm text-zinc-700 dark:text-zinc-300">Filter:</label>
+          <select
+            value={filter ?? ''}
+            onChange={(e) => setFilter(e.target.value || null)}
+            className="rounded-md border px-3 py-2 text-sm bg-white text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+          >
+            <option value="">All</option>
+            <option value="newest_first">Newest First</option>
+            <option value="oldest_first">Oldest First</option>
+            <option value="highest_score">Highest Score</option>
+            <option value="lowest_score">Lowest Score</option>
+            <option value="not_evaluated">Not Evaluated</option>
+            <option value="evaluated">Evaluated</option>
+          </select>
+        </div>
         
         {prompts.length === 0 ? (
           <div className="text-center">

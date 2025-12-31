@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Prompt } from "../app/admin/components/types";
 
-export function usePrompts() {
+export function usePrompts(filter?: string) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchPrompts() {
+      setLoading(true);
       try {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -16,7 +17,8 @@ export function usePrompts() {
           return;
         }
 
-        const response = await fetch('/api/prompts', {
+        const url = filter ? `/api/prompts?filter=${encodeURIComponent(filter)}` : '/api/prompts';
+        const response = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -42,7 +44,7 @@ export function usePrompts() {
     }
 
     fetchPrompts();
-  }, []);
+  }, [filter]);
 
   return { prompts, loading, error };
 }
