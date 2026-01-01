@@ -44,11 +44,11 @@ Run with: `npm run import-data`
 
 ### Agent Roles
 
-| Agent              | Type         | What it checks                                                       | Output                                                                               | Why this approach                                    |
-| ------------------ | ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
-| **Agent A: Size**  | LLM (Claude) | Image dimensions vs platform requirements (Instagram, etc.)          | `{ score: 0-10, reasoning: string, isOptimal: boolean }`                             | LLM provides contextual reasoning for size decisions |
-| **Agent B: Brand** | LLM (Claude) | Visual content alignment with brand style, colors, voice, and vision | `{ score: 0-10, styleAlignment, colorCompliance, voiceConsistency, reasoning, ... }` | Requires semantic understanding and visual reasoning |
-| **Agent C: Agg**   | LLM (Claude) | Combines Agent A + B scores with contextual analysis                 | `{ endScore: 0-10, summary: string }`                                                | LLM provides nuanced summary based on all inputs     |
+| Agent              | Type                 | What it checks                                                                                   | Output                                                                               | Why this approach                                    |
+| ------------------ | -------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| **Agent A: Size**  | Hybrid (Sharp + LLM) | Extracts image metadata and reasons about size compliance relative to channel and prompt context | `{ score: 0-10, reasoning: string, isOptimal: boolean }`                             | LLM provides contextual reasoning for size decisions |
+| **Agent B: Brand** | LLM (Claude)         | Visual content alignment with brand style, colors, voice, and vision                             | `{ score: 0-10, styleAlignment, colorCompliance, voiceConsistency, reasoning, ... }` | Requires semantic understanding and visual reasoning |
+| **Agent C: Agg**   | LLM (Claude)         | Combines Agent A + B scores with contextual analysis                                             | `{ endScore: 0-10, summary: string }`                                                | LLM provides nuanced summary based on all inputs     |
 
 ### Evaluation Flow
 
