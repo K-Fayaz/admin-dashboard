@@ -66,6 +66,11 @@ npm run dev
 - Login: http://localhost:3000/
 - Admin UI (after logging in): http://localhost:3000/admin
 
+### Development login credentials
+
+- **Username:** `admin`
+- **Password:** `test`
+
 ---
 
 Simple note: the import script seeds a dev admin with username `admin` and password `test`. Replace or remove this in production and add password hashing as needed.
