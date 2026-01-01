@@ -1,4 +1,4 @@
-import useAnthropic from "../lib/anthropic";
+import useAnthropic from "../lib/ai/anthropic";
 import { buildAggregatorPrompt } from "@/lib/prompts/aggregator";
 import { parseClaudeResponse } from "@/lib/ai/parseClaudeResponse";
 
@@ -24,7 +24,7 @@ const aggregatorAgent = async (agentA:AgentAResult, agentB: AgentBResult) => {
     const userPrompt = buildAggregatorPrompt(agentA, agentB);
 
 
-    let result = await useAnthropic([
+    let result:any = await useAnthropic([
         {
           role: "user",
           content: [

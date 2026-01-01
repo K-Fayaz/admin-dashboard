@@ -1,12 +1,8 @@
 "use client";
 
 import { useState } from "react";
-
-interface MediaThumbnailProps {
-  imagePath: string;
-  className?: string;
-  objectFit?: "cover" | "contain";
-}
+import type { MediaThumbnailProps } from "./types";
+import { isVideoFile } from "../utils/utils";
 
 export default function MediaThumbnail({ 
   imagePath, 
@@ -15,12 +11,6 @@ export default function MediaThumbnail({
 }: MediaThumbnailProps) {
   
   const [hasError, setHasError] = useState(false);
-  
-  const isVideoFile = (filePath: string): boolean => {
-    const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv'];
-    const ext = filePath.split('.').pop()?.toLowerCase();
-    return ext ? videoExtensions.includes(ext) : false;
-  };
 
   const isVideo = isVideoFile(imagePath);
   const mediaUrl = imagePath;

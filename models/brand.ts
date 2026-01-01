@@ -8,6 +8,6 @@ const BrandSchema = new mongoose.Schema({
     brandVision: String,
     brandVoice: String,
     colors: String,
-  });
+});
   
-  export const Brand = mongoose.models.Brand || mongoose.model('Brand', BrandSchema);
+export const Brand = mongoose.models.Brand || mongoose.model('Brand', BrandSchema);

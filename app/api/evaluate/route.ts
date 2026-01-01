@@ -7,28 +7,7 @@ import sizeComplianceAgent from '@/agents/sizeCompliance';
 import brandComplianceAgent from "@/agents/brandCompliance";
 import aggregatorAgent from '@/agents/aggregator';
 import { requireAdmin } from '@/lib/auth';
-
-interface SizeComplianceResult {
-  score: number;
-  reasoning: string;
-  isOptimal: boolean;
-}
-
-interface BrandComplianceResult {
-  score: number;
-  styleAlignment: number;
-  colorCompliance: number;
-  voiceConsistency: number;
-  visionAlignment: number;
-  reasoning: string;
-  strengths: string;
-  improvements: string;
-}
-
-interface AggregatorResult {
-  endScore: number;
-  summary: string;
-}
+import { SizeComplianceResult, BrandComplianceResult, AggregatorResult } from "@/app/api/evaluate/types";
 
 export async function POST(request: Request) {
   try {
@@ -97,10 +76,6 @@ export async function POST(request: Request) {
     // @ts-ignore - aggregatorAgent expects typed results but receives Message type from TypeScript's perspective
     const finalResultRaw = await aggregatorAgent(sizeResult, brandResult);
     const finalResult = finalResultRaw as any as AggregatorResult;
-
-    console.log(sizeResult);
-    console.log("\n\n",brandResult);
-    console.log("\n\n",finalResult);
 
     // Create or update evaluation
     const promptObjectId = id;

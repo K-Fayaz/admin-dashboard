@@ -72,4 +72,4 @@ export function buildBrandCompliancePrompt(
   }
   
   Analyze the provided image/video and provide ONLY the JSON response, no additional text.`;
-  }
+}

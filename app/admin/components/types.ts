@@ -29,3 +29,16 @@ export interface Brand {
   brandDescription?: string;
 }
 
+export interface MediaThumbnailProps {
+  imagePath: string;
+  className?: string;
+  objectFit?: "cover" | "contain";
+}
+
+export interface PromptModalProps {
+  prompt: Prompt | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onEvaluate?: (promptId: string) => void;
+  evaluatingPromptId?: string | null;
+}

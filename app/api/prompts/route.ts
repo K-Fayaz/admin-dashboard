@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
     if (!(normalizedFilter in filterMap)) {
       return NextResponse.json(
-        { success: false, error: `Filter "${filterParam}" not implemented yet. Supported: ${Object.keys(filterMap).join(', ')}` },
+        { success: false, error: `Filter "${filterParam}" not Supported. Supported: ${Object.keys(filterMap).join(', ')}` },
         { status: 400 }
       );
     }

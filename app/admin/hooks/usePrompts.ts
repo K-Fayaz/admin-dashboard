@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Prompt } from "../app/admin/components/types";
+import type { Prompt } from "../components/types";
 
 export function usePrompts(filter?: string) {
   const [prompts, setPrompts] = useState<Prompt[]>([]);

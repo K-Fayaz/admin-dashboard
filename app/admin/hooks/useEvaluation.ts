@@ -13,7 +13,6 @@ export function useEvaluation(evaluationId?: string | null, isOpen?: boolean) {
         .then((data) => {
           if (data.success) {
             setEvaluation(data.data);
-            console.log('Fetched evaluation:', data.data);
           } else {
             setError(data.error || 'Failed to fetch evaluation');
             console.error('Error fetching evaluation:', data.error);

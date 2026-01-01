@@ -13,7 +13,7 @@ const PromptSchema = new mongoose.Schema({
       ref: 'Evaluation', 
       default: null 
     },
-  });
+});
   
-  export const Prompt = mongoose.models.Prompt || mongoose.model('Prompt', PromptSchema);
+export const Prompt = mongoose.models.Prompt || mongoose.model('Prompt', PromptSchema);
   

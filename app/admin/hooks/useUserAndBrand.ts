@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { User, Brand } from "../app/admin/components/types";
+import type { User, Brand } from "../components/types";
 
 export function useUserAndBrand(userId: string | undefined, brandId: string | undefined, isOpen: boolean) {
   const [user, setUser] = useState<User | null>(null);

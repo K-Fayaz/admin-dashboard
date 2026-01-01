@@ -6,7 +6,9 @@ import { FaExpandAlt } from "react-icons/fa";
 import MediaThumbnail from "./components/MediaThumbnail";
 import PromptModal from "./components/PromptModal";
 import type { Prompt } from "./components/types";
-import { usePrompts } from "../../hooks/usePrompts";
+import { usePrompts } from "./hooks/usePrompts";
+import { truncatePrompt } from "./utils/utils";
+import { isVideoFile } from "./utils/utils"; 
 
 export default function AdminPage() {
   const router = useRouter();
@@ -15,11 +17,6 @@ export default function AdminPage() {
   const [selectedPrompt, setSelectedPrompt] = useState<Prompt | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [evaluatingPromptId, setEvaluatingPromptId] = useState<string | null>(null);
-
-  const truncatePrompt = (text: string, maxLength: number = 50) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + "...";
-  };
 
   const handleEvaluate = async (promptId: string) => {
     setEvaluatingPromptId(promptId);
@@ -48,8 +45,6 @@ export default function AdminPage() {
 
       const data = await response.json();
       if (data.success) {
-        console.log('Evaluation successful');
-
         const evalObj = data.evaluation;
 
         // If modal is already open for this prompt, attach evaluation directly
@@ -88,7 +83,7 @@ export default function AdminPage() {
     } finally {
       setEvaluatingPromptId(null);
     }
-  }; 
+  };
 
   const handleCardEvaluate = (e: React.MouseEvent, promptId: string) => {
     e.stopPropagation(); // Prevent opening modal
@@ -98,7 +93,7 @@ export default function AdminPage() {
     if (promptObj.evaluation) return; // already evaluated
     if (evaluatingPromptId !== null) return;
     handleEvaluate(promptId);
-  }; 
+  };
 
   if (loading) {
     return (
@@ -180,9 +175,10 @@ export default function AdminPage() {
                     
                     {/* Evaluate Button */}
                     <button
-                      className={`w-full rounded-md px-4 py-2 text-sm font-medium text-white transition-colors ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''} ${isEvaluated ? 'bg-gray-500' : 'bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600'}`}
+                      className={`w-full rounded-md px-4 py-2 text-sm font-medium text-white transition-colors ${isDisabled || isVideoFile(prompt.imagePath) ? 'opacity-50 cursor-not-allowed' : ''} ${isEvaluated ? 'bg-gray-500' : 'bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-700 dark:hover:bg-zinc-600'}`}
                       onClick={(e) => handleCardEvaluate(e, prompt._id)}
-                      disabled={isDisabled}
+                      disabled={isDisabled || isVideoFile(prompt.imagePath)}
+                      title={isVideoFile(prompt.imagePath) ? "Evaluation not available for video prompts" : isEvaluated ? "Prompt already evaluated" : ""}
                       aria-busy={evaluatingPromptId === prompt._id}
                     >
                       {evaluatingPromptId === prompt._id ? (

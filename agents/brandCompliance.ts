@@ -1,4 +1,4 @@
-import useAnthropic from "../lib/anthropic";
+import useAnthropic from "../lib/ai/anthropic";
 import { buildBrandCompliancePrompt } from "@/lib/prompts/brandCompliance";
 import { parseClaudeResponse } from "@/lib/ai/parseClaudeResponse";
 
@@ -39,7 +39,7 @@ const brandComplianceAgent = async (imagePath: string, prompt: string, brandDeta
     const contentType = response.headers.get('content-type') || 'image/jpeg';
     const mediaType = normalizeMediaType(contentType);
 
-    let result = await useAnthropic([
+    let result:any = await useAnthropic([
         {
           role: "user",
           content: [

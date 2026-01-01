@@ -4,16 +4,10 @@ import { useEffect, useState } from 'react';
 import { FaTimes } from "react-icons/fa";
 import MediaThumbnail from "./MediaThumbnail";
 import type { Prompt } from "./types";
-import { useUserAndBrand } from "../../../hooks/useUserAndBrand";
-import { useEvaluation } from "../../../hooks/useEvaluation";
-
-interface PromptModalProps {
-  prompt: Prompt | null;
-  isOpen: boolean;
-  onClose: () => void;
-  onEvaluate?: (promptId: string) => void;
-  evaluatingPromptId?: string | null;
-}
+import { useUserAndBrand } from "../hooks/useUserAndBrand";
+import { useEvaluation } from "../hooks/useEvaluation";
+import type { PromptModalProps } from "./types";
+import { formatDate } from "../utils/utils";
 
 export default function PromptModal({ prompt, isOpen, onClose, onEvaluate, evaluatingPromptId }: PromptModalProps) {
   
@@ -33,29 +27,12 @@ export default function PromptModal({ prompt, isOpen, onClose, onEvaluate, evalu
 
   const evaluation = fetchedEvaluation ?? preloadedEvaluation ?? null;
 
-  useEffect(() => {
-    if (evaluation) {
-      console.log('Evaluation loaded for prompt:', evaluation);
-    }
-  }, [evaluation]);
-
   const [showDetails, setShowDetails] = useState(false);
 
   if (!isOpen || !prompt) return null;
 
   const isEvaluated = !!prompt.evaluation;
   const isDisabled = isEvaluated || (evaluatingPromptId !== null && evaluatingPromptId !== prompt._id);
-
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   return (
     <div 

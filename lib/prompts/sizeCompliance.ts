@@ -74,4 +74,4 @@ export function buildSizeCompliancePrompt(
   }
   
   Provide ONLY the JSON response, no additional text.`;
-  }
+}
